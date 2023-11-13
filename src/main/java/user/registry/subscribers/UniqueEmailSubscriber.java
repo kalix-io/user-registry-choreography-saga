@@ -30,7 +30,7 @@ public class UniqueEmailSubscriber extends Action {
      if (email.isReserved()) {
       Duration delay = Duration.ofSeconds(10);
       logger.info("Email is not confirmed, scheduling timer '{}' to fire in '{}'", timerId, delay);
-      var callToDelete =
+      var callToUnReserve =
         client
           .forValueEntity(email.address())
           .call(UniqueEmailEntity::unReserve);
@@ -38,7 +38,7 @@ public class UniqueEmailSubscriber extends Action {
       var timer = timers().startSingleTimer(
         timerId,
         delay,
-        callToDelete);
+        callToUnReserve);
 
       return effects().asyncReply(timer.thenApply(__ -> Done.done()));
 
