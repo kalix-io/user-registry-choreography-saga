@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import user.registry.Done;
 
+import java.util.Optional;
+
 @Id("id")
 @TypeId("unique-address")
 @RequestMapping("/unique-emails/{id}")
@@ -32,10 +34,18 @@ public class UniqueEmailEntity extends ValueEntity<UniqueEmailEntity.UniqueEmail
 
   @Override
   public UniqueEmail emptyState() {
-    return new UniqueEmail(address, Status.NOT_USED, "");
+    return new UniqueEmail(address, Status.NOT_USED, Optional.empty());
   }
 
-  public record UniqueEmail(String address, Status status, String ownerId) {
+  public record UniqueEmail(String address, Status status, Optional<String> ownerId) {
+
+    public boolean sameOwner(String ownerId) {
+      return this.ownerId.isPresent() && this.ownerId.get().equals(ownerId);
+    }
+
+    public boolean notSameOwner(String ownerId) {
+      return !sameOwner(ownerId);
+    }
 
     public UniqueEmail asConfirmed() {
       return new UniqueEmail(address, Status.CONFIRMED, ownerId);
@@ -49,10 +59,6 @@ public class UniqueEmailEntity extends ValueEntity<UniqueEmailEntity.UniqueEmail
       return status != Status.NOT_USED;
     }
 
-    public boolean isUnused() {
-      return status == Status.NOT_USED;
-    }
-
     public boolean isReserved() {
       return status == Status.RESERVED;
     }
@@ -63,17 +69,17 @@ public class UniqueEmailEntity extends ValueEntity<UniqueEmailEntity.UniqueEmail
 
   @PostMapping("/reserve")
   public Effect<Done> reserve(@RequestBody ReserveEmail cmd) {
-    if (currentState().isInUse() && !currentState().ownerId.equals(cmd.ownerId)) {
+    if (currentState().isInUse() && currentState().notSameOwner(cmd.ownerId)) {
       return effects().error("Email already reserved");
     }
 
-    if (currentState().ownerId.equals(cmd.ownerId)) {
+    if (currentState().sameOwner(cmd.ownerId)) {
       return effects().reply(Done.done());
     }
 
     logger.info("Reserving address '{}'", cmd.address());
     return effects()
-      .updateState(new UniqueEmail(cmd.address, Status.RESERVED, cmd.ownerId))
+      .updateState(new UniqueEmail(cmd.address, Status.RESERVED, Optional.of(cmd.ownerId)))
       .thenReply(Done.done());
   }
 
