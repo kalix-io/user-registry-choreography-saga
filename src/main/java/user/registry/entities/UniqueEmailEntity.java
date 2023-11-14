@@ -70,7 +70,7 @@ public class UniqueEmailEntity extends ValueEntity<UniqueEmailEntity.UniqueEmail
   @PostMapping("/reserve")
   public Effect<Done> reserve(@RequestBody ReserveEmail cmd) {
     if (currentState().isInUse() && currentState().notSameOwner(cmd.ownerId)) {
-      return effects().error("Email already reserved");
+      return effects().error("Email is already reserved");
     }
 
     if (currentState().sameOwner(cmd.ownerId)) {
@@ -91,7 +91,7 @@ public class UniqueEmailEntity extends ValueEntity<UniqueEmailEntity.UniqueEmail
         .updateState(currentState().asConfirmed())
         .thenReply(Done.done());
     } else {
-      logger.info("Email status is not reserved confirmed. Ignoring confirmation request.");
+      logger.info("Email status is not reserved. Ignoring confirmation request.");
       return effects().reply(Done.done());
     }
   }

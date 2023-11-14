@@ -49,8 +49,8 @@ public class ApplicationController extends Action {
           return effects().asyncReply(callToUser.execute());
         })
         .exceptionally(e -> {
-          logger.info("Email already reserved '{}'", cmd.email());
-          return effects().error("Email already reserved '" + cmd.email() + "'", StatusCode.ErrorCode.BAD_REQUEST);
+          logger.info("Email is already reserved '{}'", cmd.email());
+          return effects().error("Email is already reserved '" + cmd.email() + "'", StatusCode.ErrorCode.BAD_REQUEST);
         });
 
     return effects().asyncEffect(userCreated);
